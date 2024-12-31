@@ -23,6 +23,7 @@ Port Range: 8000
 Source: 0.0.0.0/0 (to allow all traffic) or a specific IP range for restricted access.
 
 **Configure Windows Firewall on the EC2 Instance**
+
 By default, Windows Firewall may block incoming traffic on port 8000.
 
 Open Windows Firewall Settings:
