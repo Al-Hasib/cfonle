@@ -133,6 +133,8 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
             TryAgainMsg(chat_id=chat_id, bot_token=api_token)
     except Exception as e:
         print("exception: ", str(e))
+    
+    # return driver
 
 
 def main_api(url, email, pasw, vin, driver):
@@ -215,7 +217,9 @@ def main_api(url, email, pasw, vin, driver):
             # TryAgainMsg(chat_id=chat_id, bot_token=api_token)
     except Exception as e:
         print("exception: ", str(e))
+    
+    # return driver
 
 if __name__ == '__main__':
     vin = input('Enter Vin Number: ').strip()
-    main(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=vin, api_token=apiToken, chat_id=chatID)
+    driver = main(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=vin, api_token=apiToken, chat_id=chatID)
