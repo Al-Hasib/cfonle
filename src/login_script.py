@@ -53,7 +53,8 @@ def login(quit=False, headless=False):
                 print("invalid verification code !!")
             except NoSuchElementException:
                 has_code_field = None
-
+                
+    driver.maximize_window()
     if quit:
         driver.quit()
     else:
