@@ -2,20 +2,28 @@
 from telegram import Update
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
 from src.utils import main, email, pasw, apiToken, chatID, get_browser
-from src.Tele import SendPdf, WaitMsg
+from src.Tele import SendPdf, WaitMsg, NoAccessMsg
 import os
 from src.login_script import login
+from dotenv import load_dotenv
+load_dotenv()
 
 
 screenshots = "screenshots"
 
 def echo(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
-    sender_id = update.message.chat_id
+    sender_id = str(update.message.chat_id)
+    authorized_ids = os.getenv("IDs")
+    print(authorized_ids)
     message_text = update.message.text
-    print(f"Message received: '{message_text}' from user: {sender_id}")
-    WaitMsg(vin=message_text, chat_id=sender_id, bot_token="6625435370:AAG2rib8Oplf02kzYp0eGNR-rlleoo338uE")
-    main(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=message_text, api_token=apiToken, chat_id=sender_id, driver=driver)
+    if sender_id in authorized_ids:
+        print(f"Message received: '{message_text}' from user: {sender_id}")
+        WaitMsg(vin=message_text, chat_id=sender_id, bot_token="6625435370:AAG2rib8Oplf02kzYp0eGNR-rlleoo338uE")
+        main(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=message_text, api_token=apiToken, chat_id=sender_id, driver=driver)
+    else:
+        NoAccessMsg(chat_id=sender_id, bot_token="6625435370:AAG2rib8Oplf02kzYp0eGNR-rlleoo338uE")
+        print(f"Message received: '{message_text}' from user: {sender_id}")
 
 
 def main_task() -> None:

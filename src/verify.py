@@ -36,7 +36,7 @@ def verfication_code():
     # Regex pattern for verification code
     CODE_PATTERN = r'\b\d{6}\b'
     code = re.search(CODE_PATTERN, msg_body).group()
-    # print(code)
+    print(f"Verification Code: {code}")
     return code
 
 if __name__=="__main__":
