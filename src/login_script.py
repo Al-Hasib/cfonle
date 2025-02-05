@@ -1,6 +1,7 @@
 from src.utils import get_browser, email, pasw, url, By, sleep
 from selenium.common.exceptions import NoSuchElementException
-
+from src.verify import verfication_code
+import time
 
 def login(quit=False, headless=False):
     print("getting browser.....")
@@ -41,7 +42,9 @@ def login(quit=False, headless=False):
             has_code_field = None
         
         while has_code_field:
-            verification_code = input("Enter verification code: ") 
+            time.sleep(12)
+            # verification_code = input("Enter verification code: ") 
+            verification_code = verfication_code()
             driver.find_element(By.ID, "code").send_keys(verification_code)
 
             continue_btn = driver.find_element(By.XPATH, "//button[@type='submit' and @name='action']")

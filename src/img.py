@@ -15,6 +15,8 @@ def stack_images_vertically(image_dir):
         if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):  # Supported image formats
             img_path = os.path.join(image_dir, filename)
             img = Image.open(img_path)
+            width, height = img.size
+            img = img.crop((0, 0, width, height - 30))
 
             # Convert images to 'RGB' if they are in a different mode
             if img.mode != 'RGB':

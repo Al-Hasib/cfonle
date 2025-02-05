@@ -49,6 +49,10 @@ def get_browser(headless=False, proxy=False):
     chrome_option.add_experimental_option("useAutomationExtension", False)
     chrome_option.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
     chrome_option.add_argument("--disable-web-security")
+    chrome_option.add_argument("--window-size=1920,1080")
+    chrome_option.add_argument("--force-device-scale-factor=1")
+    # chrome_option.add_argument("--force-device-scale-factor=2")  # Increase scale factor
+
     driver = webdriver.Chrome(service=s, options=chrome_option)    
     return driver
 
@@ -77,16 +81,32 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
             print("executing script")
 
             driver.execute_script("document.querySelector('.do-not-print').style.display='none';")
-
-
+            time.sleep(2)
+            driver.maximize_window()
+            time.sleep(4)
+            # width = 1301
             width = driver.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);")
             height = driver.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
             print("width: ", width)
             print("height:", height)
 
+            # Get the current window size
+            window_size = driver.get_window_size()
+            print(f"Browser window size: Width = {window_size['width']}, Height = {window_size['height']}")
 
-            driver.set_window_size(width, height)   
+
+
+            # driver.set_window_size(width*3, height) 
+            # time.sleep(1)
+            # driver.minimize_window() 
+            # time.sleep(2)
+            # driver.execute_script("window.resizeTo(arguments[0], arguments[1]);", 1318, 550)
+            # driver.set_window_size(width+400, height) 
+            # window_size = driver.get_window_size()
+            # print(f"Browser window size: Width = {window_size['width']}, Height = {window_size['height']}")
+            
             scroll_height = driver.execute_script("return window.innerHeight")
+            print('scrool_height: ', scroll_height)
 
             try:
                 driver.execute_script("document.querySelector('.back-to-top-button').style.display='none';")
@@ -97,18 +117,20 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
             counter = 1
             print("saving screenshot")
             driver.save_screenshot('screenshots/Image_1.png')
-            while scroll_offset < (height - (scroll_height)):
+            while scroll_offset-150 < (height):
                 try:
                     driver.execute_script("document.querySelector('.back-to-top-button').style.display='none';")
                 except Exception as e:
                     print("no back to top button")
-            
+                
                 print("running while")
                 driver.execute_script(f"window.scrollTo(0, {scroll_offset})")
-                sleep(2)
+                sleep(4)
                 driver.save_screenshot(f'screenshots/Image_{counter}.png')
-                scroll_offset += scroll_height
+                scroll_offset += scroll_height - 30
                 counter += 1
+                
+                
 
             input_path = 'screenshots'
             output_path = 'PDF/' + vin + '.pdf'
@@ -169,7 +191,7 @@ def main_api(url, email, pasw, vin, driver):
             print("height:", height)
 
 
-            driver.set_window_size(width, height)   
+            # driver.set_window_size(width+200, height+100)   
             scroll_height = driver.execute_script("return window.innerHeight")
 
             try:
@@ -181,7 +203,7 @@ def main_api(url, email, pasw, vin, driver):
             counter = 1
             print("saving screenshot")
             driver.save_screenshot('screenshots/Image_1.png')
-            while scroll_offset < (height - (scroll_height)):
+            while scroll_offset-100 < (height):
                 try:
                     driver.execute_script("document.querySelector('.back-to-top-button').style.display='none';")
                 except Exception as e:
@@ -189,7 +211,7 @@ def main_api(url, email, pasw, vin, driver):
             
                 print("running while")
                 driver.execute_script(f"window.scrollTo(0, {scroll_offset})")
-                sleep(2)
+                sleep(4)
                 driver.save_screenshot(f'screenshots/Image_{counter}.png')
                 scroll_offset += scroll_height
                 counter += 1
