@@ -40,7 +40,7 @@ def NoAccessMsg(chat_id, bot_token):
     api_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     data = {
     "chat_id": chat_id,
-    "text": f"Your Bot ID is not authorized."
+    "text": f"نعتذر, الخدمه غير متوفرة حالياً"
     }
     response = requests.post(api_url, data=data)
 

@@ -184,7 +184,10 @@ def main_api(url, email, pasw, vin, driver):
 
             driver.execute_script("document.querySelector('.do-not-print').style.display='none';")
 
-
+            time.sleep(2)
+            driver.maximize_window()
+            time.sleep(4)
+            
             width = driver.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);")
             height = driver.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
             print("width: ", width)
@@ -203,7 +206,7 @@ def main_api(url, email, pasw, vin, driver):
             counter = 1
             print("saving screenshot")
             driver.save_screenshot('screenshots/Image_1.png')
-            while scroll_offset-100 < (height):
+            while scroll_offset-150 < (height):
                 try:
                     driver.execute_script("document.querySelector('.back-to-top-button').style.display='none';")
                 except Exception as e:
@@ -213,7 +216,7 @@ def main_api(url, email, pasw, vin, driver):
                 driver.execute_script(f"window.scrollTo(0, {scroll_offset})")
                 sleep(4)
                 driver.save_screenshot(f'screenshots/Image_{counter}.png')
-                scroll_offset += scroll_height
+                scroll_offset += scroll_height -30
                 counter += 1
 
             input_path = 'screenshots'
