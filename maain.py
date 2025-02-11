@@ -80,7 +80,7 @@ def main_task() -> None:
 
     # Start the job queue
     job_queue: JobQueue = updater.job_queue
-    job_queue.run_repeating(process_pdf_send, interval=120, first=0)  # Runs every 60 seconds
+    job_queue.run_repeating(process_pdf_send, interval=60, first=0)  # Runs every 60 seconds
 
     print("Bot started...")
     updater.start_polling()
