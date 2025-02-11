@@ -16,6 +16,10 @@ if not os.path.exists('PDF'):
     os.mkdir('PDF')
 
 
+if not os.path.exists('PDF_API'):
+    os.mkdir('PDF_API')
+
+
 with open('Config.json', 'r') as f:
     config = json.load(f)
 
@@ -224,7 +228,7 @@ def main_api(url, email, pasw, vin, driver):
                 counter += 1
 
             input_path = 'screenshots'
-            output_path = 'PDF/' + vin + '.pdf'
+            output_path = 'PDF_API/' + vin + '.pdf'
             convert_folder_to_pdf(folder_path=input_path, output_path=output_path)
             print('Pdf Formatting...')
             # SendPdf(vin=vin, chat_id=chat_id,bot_token=api_token)

@@ -22,7 +22,7 @@ def generate_pdf(input_text):
     
     
     main_api(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=input_text,  driver=driver)
-    pdf_path = os.path.join(os.getcwd(),"pdf",f"{input_text}.pdf")
+    pdf_path = os.path.join(os.getcwd(),"PDF_API",f"{input_text}.pdf")
     return pdf_path
 
 
