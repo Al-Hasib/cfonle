@@ -136,7 +136,7 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
             output_path = 'PDF/' + vin + '.pdf'
             convert_folder_to_pdf(folder_path=input_path, output_path=output_path)
             print('Pdf Formatting...')
-            SendPdf(vin=vin, chat_id=chat_id,bot_token=api_token)
+            # SendPdf(vin=vin, chat_id=chat_id,bot_token=api_token)
             driver.close()
             driver.switch_to.window(driver.window_handles[0])
             time.sleep(1)
@@ -187,7 +187,7 @@ def main_api(url, email, pasw, vin, driver):
             time.sleep(2)
             driver.maximize_window()
             time.sleep(4)
-            
+
             width = driver.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);")
             height = driver.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
             print("width: ", width)

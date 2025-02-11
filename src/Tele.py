@@ -10,11 +10,12 @@ def TryAgainMsg(chat_id, bot_token):
 
     response = requests.post(api_url, data=data)
     
-def WaitMsg(vin, chat_id, bot_token):
+def WaitMsg(vin, chat_id, bot_token, length_requests):
     api_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    
     data = {
     "chat_id": chat_id,
-    "text": f"جاري العمل على طلبك، رقم {vin}"
+    "text": f"\n مدة الانتظار المتوقعه في {length_requests} دقيقه "
     }
 
     response = requests.post(api_url, data=data)
