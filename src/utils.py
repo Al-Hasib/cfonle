@@ -150,9 +150,13 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
             else:
                 # Directory doesn't exist, create it
                 os.makedirs("screenshots")
+            return True
         else:
             print('Nothing found...')
             TryAgainMsg(chat_id=chat_id, bot_token=api_token)
+            return False
+        
+
     except Exception as e:
         print("exception: ", str(e))
     

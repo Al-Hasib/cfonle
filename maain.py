@@ -28,13 +28,14 @@ def echo(update: Update, context: CallbackContext) -> None:
         if is_only_upper_and_number(message_text):
             chat_id_vin_number = chat_id_vin_number + ((sender_id, message_text),)
             print(chat_id_vin_number)
+            length_requests = len(chat_id_vin_number)
+            WaitMsg(vin=message_text, chat_id=sender_id, bot_token=context.bot.token, length_requests=length_requests)
         
         else:
+            print(f"Message received: '{message_text}' from user: {sender_id}")
             TryAgainMsg(chat_id=sender_id, bot_token=context.bot.token)
 
-        length_requests = len(chat_id_vin_number)
-        print(f"Message received: '{message_text}' from user: {sender_id}")
-        WaitMsg(vin=message_text, chat_id=sender_id, bot_token=context.bot.token, length_requests=length_requests)
+        
     else:
         NoAccessMsg(chat_id=sender_id, bot_token=context.bot.token)
         print(f"Unauthorized message from user: {sender_id}")
@@ -65,8 +66,11 @@ def process_pdf_send(context: CallbackContext) -> None:
     # Process each chat_id and vin_num
     for item in chat_id_vin_number:
         # Call the main function for each vin_num associated with chat_id
-        main(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=item[1], api_token=apiToken, chat_id=item[0], driver=driver)
+        is_vin_correct = main(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=item[1], api_token=apiToken, chat_id=item[0], driver=driver)
         print("PDF has been saved after main function..")
+        if is_vin_correct is False:
+            chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
+            print(f"Vin number is not correct : {chat_id_vin_number}")
         break
 
 def main_task() -> None:
