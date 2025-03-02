@@ -15,7 +15,7 @@ def WaitMsg(vin, chat_id, bot_token, length_requests):
     
     data = {
     "chat_id": chat_id,
-    "text": f"\n مدة الانتظار المتوقعه في {length_requests*2} دقيقه "
+    "text": f"\n Your serial number is {length_requests}"
     }
 
     response = requests.post(api_url, data=data)

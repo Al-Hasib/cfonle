@@ -6,6 +6,8 @@ from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, JobQ
 from src.utils import main, email, pasw, apiToken, chatID, get_browser
 from src.Tele import SendPdf, WaitMsg, NoAccessMsg, TryAgainMsg
 from src.login_script import login
+from download_pdf_api import get_pdf
+import time
 
 load_dotenv()
 
@@ -53,25 +55,48 @@ def process_pdf_send(context: CallbackContext) -> None:
                 if item[1] == file_name:
                     print(bot.token)
                     SendPdf(vin=item[1], chat_id=item[0], bot_token=bot.token)
-                    print(f" {item[1]}PDF has been sent to {item[0]}user..")
+                    print(f" {item[1]} PDF has been sent to {item[0]} user..")
                     os.remove(os.path.join("PDF", pdf_file))
-                    print("PDF has been deleted..")
                     chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
+                    print("PDF has been deleted..")
                     print(f"After Deleting and sending pdf: {chat_id_vin_number}")
+
     except Exception as e:
         print(f"Raise issue in Sending PDF : {e}")
         pass
 
     
-    # Process each chat_id and vin_num
-    for item in chat_id_vin_number:
+# Process each chat_id and vin_num
+def process_main(context: CallbackContext):
+    global chat_id_vin_number
+    # time.sleep(5)
+    for item in (chat_id_vin_number):
+        print(f"=== Process main started === item : {item}")
         # Call the main function for each vin_num associated with chat_id
         is_vin_correct = main(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=item[1], api_token=apiToken, chat_id=item[0], driver=driver)
         print("PDF has been saved after main function..")
         if is_vin_correct is False:
             chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
-            print(f"Vin number is not correct : {chat_id_vin_number}")
+            print(f"Vin number is not correct of main : {chat_id_vin_number}")
+        process_pdf_send(context)
         break
+
+
+def get_pdf_api(context: CallbackContext):
+    global chat_id_vin_number
+    # time.sleep(5)
+    for index, item in enumerate(chat_id_vin_number):
+        
+        if index ==1 and len(chat_id_vin_number)>1:
+            print(f"=== GET PDF API started === item : {item} & index : {index}")
+            is_vin_correct = get_pdf(api_url="http://54.225.0.46:8000/generate-pdf_one/", vin_number=item[1], pdf_folder="PDF")
+            if is_vin_correct is False:
+                chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
+                print(f"Vin number is not correct of API: {chat_id_vin_number}")
+            process_pdf_send(context)
+
+
+
 
 def main_task() -> None:
     """Starts the bot and schedules the job queue."""
@@ -84,7 +109,9 @@ def main_task() -> None:
 
     # Start the job queue
     job_queue: JobQueue = updater.job_queue
-    job_queue.run_repeating(process_pdf_send, interval=60, first=0)  # Runs every 60 seconds
+    # job_queue.run_repeating(process_pdf_send, interval=60, first=30)  # Runs every 60 seconds
+    job_queue.run_repeating(process_main, interval=60, first=0)  # Runs every 60 seconds
+    job_queue.run_repeating(get_pdf_api, interval=60, first=0)  # Runs every 60 seconds
 
     print("Bot started...")
     updater.start_polling()
