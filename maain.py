@@ -12,6 +12,7 @@ import time
 load_dotenv()
 
 chat_id_vin_number = tuple() # key: chat_id, value: vin_number
+id_vin_list = list()
 screenshots = "screenshots"
 
 
@@ -39,27 +40,30 @@ def echo(update: Update, context: CallbackContext) -> None:
 
         
     else:
+        print(f"Message received: '{message_text}' from user: {sender_id}")
         NoAccessMsg(chat_id=sender_id, bot_token=context.bot.token)
         print(f"Unauthorized message from user: {sender_id}")
 
 def process_pdf_send(context: CallbackContext) -> None:
     """Sends PDFs to users based on VIN match."""
-    global chat_id_vin_number
+    # global chat_id_vin_number
+    global id_vin_list
     bot: Bot = context.bot
     try:
         for pdf_file in os.listdir("PDF"):
             file_name = pdf_file.split(".")[0]
             print(f"Checking file: {file_name}")
 
-            for item in chat_id_vin_number:
+            for item in id_vin_list:
                 if item[1] == file_name:
                     print(bot.token)
                     SendPdf(vin=item[1], chat_id=item[0], bot_token=bot.token)
                     print(f" {item[1]} PDF has been sent to {item[0]} user..")
                     os.remove(os.path.join("PDF", pdf_file))
-                    chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
+                    id_vin_list.remove((item[0],item[1]))
+                    # chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
                     print("PDF has been deleted..")
-                    print(f"After Deleting and sending pdf: {chat_id_vin_number}")
+                    print(f"After Deleting and sending pdf: {id_vin_list}")
 
     except Exception as e:
         print(f"Raise issue in Sending PDF : {e}")
@@ -69,32 +73,53 @@ def process_pdf_send(context: CallbackContext) -> None:
 # Process each chat_id and vin_num
 def process_main(context: CallbackContext):
     global chat_id_vin_number
-    # time.sleep(5)
+    global id_vin_list
     for item in (chat_id_vin_number):
-        print(f"=== Process main started === item : {item}")
-        # Call the main function for each vin_num associated with chat_id
+        chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
+        print(f"=== Process main started === \nitem : {item}\n chat_id_vin: {chat_id_vin_number}")
+
         is_vin_correct = main(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=item[1], api_token=apiToken, chat_id=item[0], driver=driver)
         print("PDF has been saved after main function..")
         if is_vin_correct is False:
             chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
             print(f"Vin number is not correct of main : {chat_id_vin_number}")
+        id_vin_list.append((item[0],item[1]))        
+
         process_pdf_send(context)
         break
 
 
+
 def get_pdf_api(context: CallbackContext):
     global chat_id_vin_number
-    # time.sleep(5)
+    global id_vin_list
+
     for index, item in enumerate(chat_id_vin_number):
-        
         if index ==1 and len(chat_id_vin_number)>1:
-            print(f"=== GET PDF API started === item : {item} & index : {index}")
+            chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
+            print(f"=== GET PDF API started === \n item : {item} & index : {index}\n Chat_id_vin : {chat_id_vin_number}")
             is_vin_correct = get_pdf(api_url="http://54.225.0.46:8000/generate-pdf_one/", vin_number=item[1], pdf_folder="PDF")
             if is_vin_correct is False:
                 chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
                 print(f"Vin number is not correct of API: {chat_id_vin_number}")
+            id_vin_list.append((item[0],item[1]))
             process_pdf_send(context)
 
+
+def get_pdf_api_2(context: CallbackContext):
+    global chat_id_vin_number
+    global id_vin_list
+
+    for index, item in enumerate(chat_id_vin_number):
+        if index ==2 and len(chat_id_vin_number)>1:
+            chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
+            print(f"=== GET PDF API started === \n item : {item} & index : {index}\n Chat_id_vin : {chat_id_vin_number}")
+            is_vin_correct = get_pdf(api_url="http://54.225.0.46:8080/generate-pdf_one/", vin_number=item[1], pdf_folder="PDF")
+            if is_vin_correct is False:
+                chat_id_vin_number = tuple(x for x in chat_id_vin_number if x != (item[0],item[1]))
+                print(f"Vin number is not correct of API: {chat_id_vin_number}")
+            id_vin_list.append((item[0],item[1]))
+            process_pdf_send(context)
 
 
 
@@ -110,8 +135,9 @@ def main_task() -> None:
     # Start the job queue
     job_queue: JobQueue = updater.job_queue
     # job_queue.run_repeating(process_pdf_send, interval=60, first=30)  # Runs every 60 seconds
-    job_queue.run_repeating(process_main, interval=60, first=0)  # Runs every 60 seconds
-    job_queue.run_repeating(get_pdf_api, interval=60, first=0)  # Runs every 60 seconds
+    job_queue.run_repeating(process_main, interval=20, first=0)  # Runs every 60 seconds
+    job_queue.run_repeating(get_pdf_api, interval=20, first=0)  # Runs every 60 seconds
+    job_queue.run_repeating(get_pdf_api_2, interval=20, first=0)  # Runs every 60 seconds
 
     print("Bot started...")
     updater.start_polling()

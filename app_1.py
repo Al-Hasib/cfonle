@@ -7,8 +7,6 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-
-driver_first = login(quit=False, headless=False)
 driver_second = login(quit=False, headless=False)
 print("log in done")
 
@@ -27,37 +25,17 @@ def screenshots_func(screenshots):
         # Directory doesn't exist, create it
         os.makedirs(screenshots)
 
-def generate_pdf(input_text, driver = driver_first):
-    # Check if the directory exists
-    remove_pdf()
-    screenshots = "screenshots_api"
-    screenshots_func(screenshots = screenshots)
-
-    pdf_path = os.path.join(os.getcwd(),"PDF_API",f"{input_text}.pdf")
-    is_vin_correct = main_api(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=input_text,  driver=driver, screenshot_name = screenshots)
-    pdf_path = os.path.join(os.getcwd(),"PDF_API",f"{input_text}.pdf")
-    return pdf_path
 
 def generate_pdf_second(input_text, driver = driver_second):
     # Check if the directory exists
     remove_pdf()
-    screenshots = "screenshots_api_1"
+    screenshots = "screenshots_api_2"
     screenshots_func(screenshots = screenshots)
     
     is_vin_correct = main_api(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=input_text,  driver=driver, screenshot_name = screenshots)
     pdf_path = os.path.join(os.getcwd(),"PDF_API",f"{input_text}.pdf")
     return pdf_path, is_vin_correct
     
-    
-
-
-
-@app.post("/generate-pdf/")
-def response_pdf(input_text: str):
-    # generate pdf and return the path
-    pdf_path = generate_pdf(input_text)
-
-    return FileResponse(pdf_path, media_type='application/pdf', filename=f"{input_text}.pdf")
 
 
 @app.post("/generate-pdf_one/")

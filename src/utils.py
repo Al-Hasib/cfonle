@@ -70,7 +70,7 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
         vin_input.send_keys(vin)
         submit = driver.find_element(By.ID, 'run_vhr_button')
         driver.execute_script("arguments[0].click();", submit)
-        sleep(10)
+        sleep(8)
         
         if len(driver.window_handles) > 1:
             print("inside if condition")
@@ -85,9 +85,9 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
             print("executing script")
 
             driver.execute_script("document.querySelector('.do-not-print').style.display='none';")
-            time.sleep(2)
+            time.sleep(1)
             driver.maximize_window()
-            time.sleep(4)
+            time.sleep(3)
             # width = 1301
             width = driver.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);")
             height = driver.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
@@ -119,7 +119,7 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
                 
                 print("running while")
                 driver.execute_script(f"window.scrollTo(0, {scroll_offset})")
-                sleep(4)
+                sleep(3)
                 driver.save_screenshot(f'screenshots/Image_{counter}.png')
                 scroll_offset += scroll_height - 30
                 counter += 1
@@ -157,7 +157,7 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
     # return driver
 
 
-def main_api(url, email, pasw, vin, driver):
+def main_api(url, email, pasw, vin, driver, screenshot_name = "screenshots_api"):
     driver.implicitly_wait(30)
     try:
         print("scraping vin search page....")
@@ -203,7 +203,7 @@ def main_api(url, email, pasw, vin, driver):
             scroll_offset = 0
             counter = 1
             print("saving screenshot")
-            driver.save_screenshot('screenshots_api/Image_1.png')
+            driver.save_screenshot(f'{screenshot_name}/Image_1.png')
             while scroll_offset-150 < (height):
                 try:
                     driver.execute_script("document.querySelector('.back-to-top-button').style.display='none';")
@@ -213,11 +213,11 @@ def main_api(url, email, pasw, vin, driver):
                 print("running while")
                 driver.execute_script(f"window.scrollTo(0, {scroll_offset})")
                 sleep(4)
-                driver.save_screenshot(f'screenshots_api/Image_{counter}.png')
+                driver.save_screenshot(f'{screenshot_name}/Image_{counter}.png')
                 scroll_offset += scroll_height -30
                 counter += 1
 
-            input_path = 'screenshots_api'
+            input_path = screenshot_name
             output_path = 'PDF_API/' + vin + '.pdf'
             convert_folder_to_pdf(folder_path=input_path, output_path=output_path)
             print('Pdf Formatting...')
@@ -227,14 +227,14 @@ def main_api(url, email, pasw, vin, driver):
             time.sleep(1)
             driver.maximize_window()
             
-            if os.path.exists("screenshots_api"):
+            if os.path.exists(screenshot_name):
                 # Directory exists, remove files within it
-                for filename in os.listdir("screenshots_api"):
-                    file_path = os.path.join("screenshots_api", filename)
+                for filename in os.listdir(screenshot_name):
+                    file_path = os.path.join(screenshot_name, filename)
                     os.remove(file_path)  # Remove individual files
             else:
                 # Directory doesn't exist, create it
-                os.makedirs("screenshots_api")
+                os.makedirs(screenshot_name)
             return True
         else:
             print('Nothing found...')
