@@ -47,7 +47,7 @@ while True:
     print(f"Script started with PID of process 1: {process_1.pid}")
 
     # Step 3: Run the subprocess for a specific duration (e.g., 1 hour)
-    time.sleep(300000)  # Keep the subprocess running for 1 hour
+    time.sleep(500000)  # Keep the subprocess running for 1 hour
 
     # Step 4: Terminate the subprocess
     print("Terminating the script...")
