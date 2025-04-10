@@ -6,8 +6,9 @@ load_dotenv()
 
 s3 = boto3.client(
     's3',
-    aws_access_key_id=os.getenv("aws_access_key_id"),
-    aws_secret_access_key=os.getenv("aws_secret_access_key")
+    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+    region_name=os.getenv('AWS_REGION')
 )
 
 bucket_name = "carfaxonline-pdfs"
@@ -33,3 +34,30 @@ def upload_pdf_s3(file_path):
     s3_key = os.path.basename()
     s3.upload_file(file_path, bucket_name, s3_key)
     print("Upload PDF successful!")
+
+import botocore
+
+def pdf_exists(object_name=None):
+    """Check if a PDF file exists in S3"""
+    try:
+        s3.head_object(Bucket="carfaxonline-pdfs", Key=object_name)
+        return True
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            return False
+        else:
+            raise  # Other errors should not be silenced
+
+# Example
+if pdf_exists('file.pdf'):
+    print("PDF exists. Ready to download.")
+else:
+    print("PDF does not exist.")
+
+if __name__=="__main__":
+    all_objects()
+    # Example
+    if pdf_exists('Student ID Card.pdf'):
+        print("✅ PDF exists. Ready to download.")
+    else:
+        print("❌ PDF does not exist.")
