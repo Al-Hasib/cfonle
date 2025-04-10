@@ -7,6 +7,7 @@ from time import sleep
 from src.Tele import SendPdf, TryAgainMsg
 from src.Tele import SendPdf
 from src.img import convert_folder_to_pdf
+from src.s3_connection import upload_pdf_s3
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
@@ -130,6 +131,7 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
             output_path = 'PDF/' + vin + '.pdf'
             convert_folder_to_pdf(folder_path=input_path, output_path=output_path)
             print('Pdf Formatting...')
+            upload_pdf_s3(output_path)
             # SendPdf(vin=vin, chat_id=chat_id,bot_token=api_token)
             driver.close()
             driver.switch_to.window(driver.window_handles[0])
@@ -221,6 +223,7 @@ def main_api(url, email, pasw, vin, driver, screenshot_name = "screenshots_api")
             output_path = 'PDF_API/' + vin + '.pdf'
             convert_folder_to_pdf(folder_path=input_path, output_path=output_path)
             print('Pdf Formatting...')
+            upload_pdf_s3(output_path)
             # SendPdf(vin=vin, chat_id=chat_id,bot_token=api_token)
             driver.close()
             driver.switch_to.window(driver.window_handles[0])

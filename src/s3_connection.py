@@ -1,6 +1,7 @@
 import boto3
 import os
 from dotenv import load_dotenv
+import botocore
 
 load_dotenv()
 
@@ -25,17 +26,18 @@ def all_objects():
 
 
 def download_pdf_s3(file_name, path):
+    os.makedirs(path, exist_ok=True)
     download_path = os.path.join(path, file_name)
     s3.download_file(bucket_name, file_name, download_path)
     print("Download PDF successful!")
 
 
 def upload_pdf_s3(file_path):
-    s3_key = os.path.basename()
+    s3_key = os.path.basename(file_path)
     s3.upload_file(file_path, bucket_name, s3_key)
     print("Upload PDF successful!")
 
-import botocore
+
 
 def pdf_exists(object_name=None):
     """Check if a PDF file exists in S3"""
@@ -51,13 +53,18 @@ def pdf_exists(object_name=None):
 # Example
 if pdf_exists('file.pdf'):
     print("PDF exists. Ready to download.")
+    
 else:
     print("PDF does not exist.")
 
 if __name__=="__main__":
     all_objects()
     # Example
-    if pdf_exists('Student ID Card.pdf'):
-        print("✅ PDF exists. Ready to download.")
-    else:
-        print("❌ PDF does not exist.")
+    # if pdf_exists('Student ID Card.pdf'):
+    #     print("✅ PDF exists. Ready to download.")
+        
+    #     download_pdf_s3(file_name='Student ID Card.pdf', path ="PDF_S3")
+
+    # else:
+    #     print("❌ PDF does not exist.")
+    upload_pdf_s3("PDF_S3/Student ID.pdf")
