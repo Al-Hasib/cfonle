@@ -37,6 +37,21 @@ def SendPdf(vin, chat_id, bot_token):
     if response.status_code == 200:
         print('PDF sent successfully!')
 
+def SendPdf_S3(vin, chat_id, bot_token):
+    pdf_path = os.path.join(os.getcwd(), 'PDF_S3', vin + '.pdf')
+    print(pdf_path)
+    url = f'https://api.telegram.org/bot{bot_token}/sendDocument'
+    files = {
+        'document': open(pdf_path, 'rb')
+    }
+    params = {
+        'chat_id': chat_id,
+    }
+    response = requests.post(url, files=files, params=params)
+    print(response.status_code)
+    if response.status_code == 200:
+        print('PDF sent successfully!')
+
 def NoAccessMsg(chat_id, bot_token):
     api_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     data = {
