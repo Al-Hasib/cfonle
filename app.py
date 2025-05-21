@@ -5,6 +5,8 @@ from src.utils import main_api, email, pasw, get_browser
 from src.login_script import login
 from fastapi.responses import JSONResponse
 import pandas as pd
+import aiocron
+
 
 app = FastAPI()
 
@@ -12,6 +14,22 @@ app = FastAPI()
 driver_first = login(quit=False, headless=False)
 driver_second = login(quit=False, headless=False)
 print("log in done")
+
+DATA_PATH = "data.csv"
+
+def update_limit_column():
+    df = pd.read_csv(DATA_PATH)
+
+    df['used'] = 0  # you can set logic here to compute values
+    
+    # Save updated data
+    df.to_csv(DATA_PATH, index=False)
+    print("Limit column updated")
+
+# Schedule this to run every day at midnight (00:00)
+@aiocron.crontab('0 0 * * *')  # runs daily at 00:00
+async def scheduled_task():
+    update_limit_column()
 
 def remove_pdf(path = "PDF_API"):
     for file in os.listdir(path):
@@ -122,5 +140,12 @@ def show_pending():
     return{
         "Pending_data": data_dict
     }
+
+@app.get_all("/all_data")
+def get_all():
+    df = pd.read_csv("data.csv")
+
+    return {"data":df}
+
 
 
