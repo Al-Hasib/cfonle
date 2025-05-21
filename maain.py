@@ -4,10 +4,11 @@ from dotenv import load_dotenv
 from telegram import Update, Bot
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, JobQueue
 from src.utils import main, email, pasw, apiToken, chatID, get_browser
-from src.Tele import SendPdf, WaitMsg, NoAccessMsg, TryAgainMsg
+from src.Tele import SendPdf, WaitMsg, NoAccessMsg, TryAgainMsg, SendPdf_S3
 from src.login_script import login
 from download_pdf_api import get_pdf
 import time
+from src.s3_connection import pdf_exists, download_pdf_s3
 
 load_dotenv()
 
@@ -29,10 +30,18 @@ def echo(update: Update, context: CallbackContext) -> None:
 
     if sender_id in authorized_ids:
         if is_only_upper_and_number(message_text):
-            chat_id_vin_number = chat_id_vin_number + ((sender_id, message_text),)
-            print(chat_id_vin_number)
-            length_requests = len(chat_id_vin_number)
-            WaitMsg(vin=message_text, chat_id=sender_id, bot_token=context.bot.token, length_requests=length_requests)
+            pdf_name = message_text+".pdf"
+            if pdf_exists(object_name=pdf_name):
+                s3_file_path = os.path.join(os.getcwd(),"PDF_S3")
+                download_pdf_s3(file_name=pdf_name, path =s3_file_path)
+                SendPdf_S3(vin=message_text, chat_id=sender_id, bot_token='6625435370:AAG2rib8Oplf02kzYp0eGNR-rlleoo338uE')
+                os.remove(os.path.join(s3_file_path, pdf_name))
+                print("Pdf has been sent from AWS S3...")
+            else:
+                chat_id_vin_number = chat_id_vin_number + ((sender_id, message_text),)
+                print(chat_id_vin_number)
+                length_requests = len(chat_id_vin_number)
+                WaitMsg(vin=message_text, chat_id=sender_id, bot_token=context.bot.token, length_requests=length_requests)
         
         else:
             print(f"Message received: '{message_text}' from user: {sender_id}")
