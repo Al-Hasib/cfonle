@@ -9,26 +9,59 @@ from src.login_script import login
 from download_pdf_api import get_pdf
 import time
 from src.s3_connection import pdf_exists, download_pdf_s3
-
+import pandas as pd
 load_dotenv()
 
 chat_id_vin_number = tuple() # key: chat_id, value: vin_number
 id_vin_list = list()
 screenshots = "screenshots"
 
+df = pd.read_csv("data.csv")
 
 def is_only_upper_and_number(s):
     return bool(re.fullmatch(r"(?=.*[A-Z])(?=.*[0-9])[A-Z0-9]+", s))
 
+def check_user_limit(user_id):
+    """Check if a specific user has exceeded their limit"""
+
+    user = df[df['Id'] == int(user_id)]
+    user_data = user.iloc[0]
+    used = user_data['used']
+    limit = user_data['limit']
+    rest = int(limit)-int(used)
+
+    if int(used) <= int(limit):
+        return True, used, rest, limit
+    else:
+        return False, used, rest, limit
 
 def echo(update: Update, context: CallbackContext) -> None:
     """Handles user messages."""
-    global chat_id_vin_number
+    global chat_id_vin_number, df
     sender_id = str(update.message.chat_id)
-    authorized_ids = os.getenv("IDs") # Convert to list
+    all_ids = df['Id'].to_list()
+
+    active_rows = df[df['status']=='active']
+    active_ids = active_rows['Id'].to_list()
+    # authorized_ids = os.getenv("IDs") # Convert to list
     message_text = update.message.text
 
-    if sender_id in authorized_ids:
+    if message_text.startswith("#"):
+        name = message_text[1:]
+        if int(sender_id) in all_ids:
+            df.loc[df['Id']== int(sender_id), "name"] = name
+
+        else:
+            new_row_index = len(df)
+            df.loc[new_row_index] = [name, int(sender_id), 'pending', 100, 0]
+
+    check_test, used, rest, limit = check_user_limit(sender_id)
+    print(f"Check test: {check_test}\n used:{used} \nrest:{rest}\nlimit:{limit}")
+    df.to_csv('data.csv', index=False)
+
+    if int(sender_id) in active_ids and check_test:
+        df.loc[df['Id']== int(sender_id), "used"] = int(used) + 1
+        df.to_csv('data.csv', index=False)
         if is_only_upper_and_number(message_text):
             pdf_name = message_text+".pdf"
             if pdf_exists(object_name=pdf_name):
