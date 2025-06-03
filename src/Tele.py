@@ -21,6 +21,22 @@ def WaitMsg(vin, chat_id, bot_token, length_requests):
     response = requests.post(api_url, data=data)
 
 
+def LimitIssueMsg(chat_id, bot_token, type='daily'):
+    api_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    if type=='daily':
+        data = {
+        "chat_id": chat_id,
+        "text": "Dear User, Your daily limit exceeds. Please contact with support team to increase daily limit or try tomorrow. Thank you."
+        }
+    else:
+        data = {
+        "chat_id": chat_id,
+        "text": "Dear User, Your life time Limit exceeds. Please contact with support team to increase limit. Thank you."
+        }
+
+
+    response = requests.post(api_url, data=data)
+
 
 def SendPdf(vin, chat_id, bot_token):
     pdf_path = os.path.join(os.getcwd(), 'PDF', vin + '.pdf')

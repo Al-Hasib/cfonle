@@ -4,64 +4,93 @@ from dotenv import load_dotenv
 from telegram import Update, Bot
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, JobQueue
 from src.utils import main, email, pasw, apiToken, chatID, get_browser
-from src.Tele import SendPdf, WaitMsg, NoAccessMsg, TryAgainMsg, SendPdf_S3
+from src.Tele import SendPdf, WaitMsg, NoAccessMsg, TryAgainMsg, SendPdf_S3, LimitIssueMsg
 from src.login_script import login
 from download_pdf_api import get_pdf
-import time
 from src.s3_connection import pdf_exists, download_pdf_s3
 import pandas as pd
+import uuid
 load_dotenv()
 
 chat_id_vin_number = tuple() # key: chat_id, value: vin_number
 id_vin_list = list()
 screenshots = "screenshots"
 
-df = pd.read_csv("data.csv")
+df = pd.read_csv("user_handling.csv")
 
 def is_only_upper_and_number(s):
     return bool(re.fullmatch(r"(?=.*[A-Z])(?=.*[0-9])[A-Z0-9]+", s))
 
 def check_user_limit(user_id):
     """Check if a specific user has exceeded their limit"""
+    daily_available = True
+    total_available = True
 
-    user = df[df['Id'] == int(user_id)]
+    user = df[df['telegram_id'] == int(user_id)]
     user_data = user.iloc[0]
-    used = user_data['used']
-    limit = user_data['limit']
-    rest = int(limit)-int(used)
+    daily_used = user_data['daily_used']
+    daily_limit = user_data['daily_limit']
+    # daily_access = int(daily_limit)-int(daily_limit)
+    total_used = user_data['total_used']
+    total_limit = user_data['total_limit']
+    # total_access = int(daily_limit)-int(daily_limit)
 
-    if int(used) <= int(limit):
-        return True, used, rest, limit
+    if int(daily_used) <= int(daily_limit) and int(total_used <= total_limit):
+        return daily_available, total_available, daily_used, total_used
+    
+    elif int(daily_used) <= int(daily_limit) and int(total_used > total_limit):
+        total_available = False
+        return daily_available, total_available, daily_used, total_used
+    
+    elif int(daily_used) > int(daily_limit) and int(total_used <= total_limit):
+        daily_available = False
+        return daily_available, total_available, daily_used, total_used
     else:
-        return False, used, rest, limit
+        daily_available = False
+        total_available = False
+        return daily_available, total_available, daily_used, total_used
+    
+
+
+def is_uuid4(uuid_string):
+    try:
+        val = uuid.UUID(uuid_string, version=4)
+        print(val)
+        return str(val) == uuid_string
+    except ValueError:
+        return False
 
 def echo(update: Update, context: CallbackContext) -> None:
     """Handles user messages."""
     global chat_id_vin_number, df
     sender_id = str(update.message.chat_id)
-    all_ids = df['Id'].to_list()
-
-    active_rows = df[df['status']=='active']
-    active_ids = active_rows['Id'].to_list()
+    all_ids = df['telegram_id'].to_list()
     # authorized_ids = os.getenv("IDs") # Convert to list
     message_text = update.message.text
 
-    if message_text.startswith("#"):
-        name = message_text[1:]
-        if int(sender_id) in all_ids:
-            df.loc[df['Id']== int(sender_id), "name"] = name
+    if is_uuid4(message_text):
+        # name = message_text[1:]
+        # if int(sender_id) in all_ids:
+        #     df.loc[df['Id']== int(sender_id), "name"] = name
+        df.loc[df['uuid']==message_text,'telegram_id'] = int(sender_id)
+        df.to_csv('user_handling.csv', index=False)
 
-        else:
-            new_row_index = len(df)
-            df.loc[new_row_index] = [name, int(sender_id), 'pending', 100, 0]
+        # else:
+        #     new_row_index = len(df)
+        #     df.loc[new_row_index] = [name, int(sender_id), 'pending', 100, 0]
 
-    check_test, used, rest, limit = check_user_limit(sender_id)
-    print(f"Check test: {check_test}\n used:{used} \nrest:{rest}\nlimit:{limit}")
-    df.to_csv('data.csv', index=False)
+    daily_available, total_available, daily_used, total_used  = check_user_limit(sender_id)
+    # print(f"Check test: {check_test}\n used:{used} \nrest:{rest}\nlimit:{limit}")
+    if not daily_available:
+        LimitIssueMsg(chat_id= sender_id, bot_token='6625435370:AAG2rib8Oplf02kzYp0eGNR-rlleoo338uE', type='daily')
+    if not total_available:
+        LimitIssueMsg(chat_id= sender_id, bot_token='6625435370:AAG2rib8Oplf02kzYp0eGNR-rlleoo338uE', type='total')
+    
 
-    if int(sender_id) in active_ids and check_test:
-        df.loc[df['Id']== int(sender_id), "used"] = int(used) + 1
-        df.to_csv('data.csv', index=False)
+    if int(sender_id) in all_ids and daily_available and total_available:
+        df.loc[df['telegram_id']== int(sender_id), "daily_used"] = int(daily_used) + 1
+        df.loc[df['telegram_id']== int(sender_id), "total_used"] = int(total_used) + 1
+        df.to_csv('user_handling.csv', index=False)
         if is_only_upper_and_number(message_text):
             pdf_name = message_text+".pdf"
             if pdf_exists(object_name=pdf_name):
