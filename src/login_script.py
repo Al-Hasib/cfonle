@@ -9,8 +9,11 @@ def login(quit=False, headless=False):
     print("got browser")
     driver.implicitly_wait(50)
     driver.get(url)
+    time.sleep(3)
     driver.find_element(By.ID, 'username').send_keys(email)
+    time.sleep(4)
     driver.find_element(By.ID, 'password').send_keys(pasw)
+    time.sleep(4)
     
     # Locate the login button by class
     # login_button = driver.find_element(By.CLASS_NAME, 'cb2e18c4c')

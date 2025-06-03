@@ -10,6 +10,7 @@ from download_pdf_api import get_pdf
 from src.s3_connection import pdf_exists, download_pdf_s3
 import pandas as pd
 import uuid
+import time
 load_dotenv()
 
 chat_id_vin_number = tuple() # key: chat_id, value: vin_number
@@ -27,6 +28,8 @@ def check_user_limit(user_id):
     total_available = True
 
     user = df[df['telegram_id'] == int(user_id)]
+    if user.empty:
+        return False,False,0,0
     user_data = user.iloc[0]
     daily_used = user_data['daily_used']
     daily_limit = user_data['daily_limit']

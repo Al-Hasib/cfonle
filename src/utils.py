@@ -69,6 +69,7 @@ def main(url, email, pasw, vin, api_token, chat_id, driver):
         vin_input = driver.find_element(By.ID, 'vin')
         vin_input.clear()
         vin_input.send_keys(vin)
+        time.sleep(2)
         submit = driver.find_element(By.ID, 'run_vhr_button')
         driver.execute_script("arguments[0].click();", submit)
         sleep(8)
