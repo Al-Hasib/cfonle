@@ -17,6 +17,7 @@ def WaitMsg(vin, chat_id, bot_token, length_requests):
     "chat_id": chat_id,
     "text": f"\n Your serial number is {length_requests}"
     }
+    print(f"WaitMsg: {data}")
 
     response = requests.post(api_url, data=data)
 
