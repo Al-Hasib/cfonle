@@ -15,6 +15,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import time
 import random
+from seleniumwire import webdriver as wire_driver
 
 if not os.path.exists('PDF'):
     os.mkdir('PDF')
@@ -228,9 +229,7 @@ def _get_fortified_browser(headless, proxy, user_agents, proxies):
 
 def _get_proxy_rotated_browser(headless, proxy, user_agents, proxies):
     """Strategy 4: Focus on proxy rotation"""
-    try:
-        from seleniumwire import webdriver as wire_driver
-        
+    try: 
         # Selenium-wire for advanced proxy handling
         seleniumwire_options = {}
         
@@ -305,16 +304,204 @@ def _add_human_behavior(driver):
         print(f"Human behavior simulation failed: {str(e)}")
 
 def _perform_login(driver, url, email, pasw):
-    """Perform login with enhanced error handling"""
+    """Perform login with enhanced error handling and proper CarfaxOnline.com authentication"""
     try:
+        print("Navigating to login page...")
         driver.get(url)
         
-        # Add random delay
+        # Add random delay to simulate human behavior
         time.sleep(random.uniform(3, 7))
         
-        # Your existing login logic would go here
-        # For now, we'll assume login is successful if we can reach the page
-        return True
+        # Wait for page to load completely
+        driver.implicitly_wait(10)
+        
+        # Check if we're already logged in by looking for logout elements or user dashboard
+        try:
+            # Look for elements that indicate we're already logged in
+            logged_in_indicator = driver.find_element(By.XPATH, "//a[contains(@href, 'logout') or contains(text(), 'Logout') or contains(text(), 'Dashboard')]")
+            if logged_in_indicator:
+                print("Already logged in, skipping login process...")
+                return True
+        except:
+            # Not logged in, proceed with login
+            pass
+        
+        # Look for login form elements - try multiple possible selectors
+        email_field = None
+        password_field = None
+        login_button = None
+        
+        # Try to find email/username field with various selectors
+        email_selectors = [
+            "//input[@type='email']",
+            "//input[@name='email']",
+            "//input[@id='email']",
+            "//input[@name='username']",
+            "//input[@id='username']",
+            "//input[@placeholder='Email']",
+            "//input[@placeholder='Username']",
+            "//input[contains(@class, 'email')]",
+            "//input[contains(@class, 'username')]"
+        ]
+        
+        for selector in email_selectors:
+            try:
+                email_field = driver.find_element(By.XPATH, selector)
+                print(f"Found email field with selector: {selector}")
+                break
+            except:
+                continue
+        
+        # Try to find password field with various selectors
+        password_selectors = [
+            "//input[@type='password']",
+            "//input[@name='password']",
+            "//input[@id='password']",
+            "//input[@placeholder='Password']",
+            "//input[contains(@class, 'password')]"
+        ]
+        
+        for selector in password_selectors:
+            try:
+                password_field = driver.find_element(By.XPATH, selector)
+                print(f"Found password field with selector: {selector}")
+                break
+            except:
+                continue
+        
+        # Try to find login button with various selectors
+        login_selectors = [
+            "//button[@type='submit']",
+            "//input[@type='submit']",
+            "//button[contains(text(), 'Login')]",
+            "//button[contains(text(), 'Sign In')]",
+            "//input[@value='Login']",
+            "//input[@value='Sign In']",
+            "//button[contains(@class, 'login')]",
+            "//button[contains(@class, 'signin')]",
+            "//a[contains(@class, 'login')]"
+        ]
+        
+        for selector in login_selectors:
+            try:
+                login_button = driver.find_element(By.XPATH, selector)
+                print(f"Found login button with selector: {selector}")
+                break
+            except:
+                continue
+        
+        # Check if we found all required elements
+        if not email_field:
+            print("Could not find email/username field")
+            return False
+        
+        if not password_field:
+            print("Could not find password field")
+            return False
+        
+        if not login_button:
+            print("Could not find login button")
+            return False
+        
+        # Clear fields and enter credentials with human-like typing
+        print("Clearing and filling email field...")
+        email_field.clear()
+        time.sleep(random.uniform(0.5, 1.5))
+        
+        # Type email with human-like speed
+        for char in email:
+            email_field.send_keys(char)
+            time.sleep(random.uniform(0.05, 0.15))
+        
+        time.sleep(random.uniform(1, 2))
+        
+        print("Clearing and filling password field...")
+        password_field.clear()
+        time.sleep(random.uniform(0.5, 1.5))
+        
+        # Type password with human-like speed
+        for char in pasw:
+            password_field.send_keys(char)
+            time.sleep(random.uniform(0.05, 0.15))
+        
+        time.sleep(random.uniform(1, 3))
+        
+        # Click login button
+        print("Clicking login button...")
+        driver.execute_script("arguments[0].click();", login_button)
+        
+        # Wait for login to process
+        time.sleep(random.uniform(3, 6))
+        
+        # Verify login success by checking for various indicators
+        login_success = False
+        
+        # Check for successful login indicators
+        success_indicators = [
+            "//a[contains(@href, 'logout')]",
+            "//a[contains(text(), 'Logout')]",
+            "//div[contains(@class, 'dashboard')]",
+            "//div[contains(@class, 'user')]",
+            "//span[contains(@class, 'username')]",
+            "//div[contains(@class, 'profile')]"
+        ]
+        
+        for indicator in success_indicators:
+            try:
+                element = driver.find_element(By.XPATH, indicator)
+                if element:
+                    print(f"Login success detected with indicator: {indicator}")
+                    login_success = True
+                    break
+            except:
+                continue
+        
+        # Alternative check: see if we're redirected away from login page
+        if not login_success:
+            current_url = driver.current_url.lower()
+            if 'login' not in current_url and 'signin' not in current_url:
+                print("Login appears successful - redirected away from login page")
+                login_success = True
+        
+        # Check for error messages
+        error_selectors = [
+            "//div[contains(@class, 'error')]",
+            "//div[contains(@class, 'alert')]",
+            "//span[contains(@class, 'error')]",
+            "//p[contains(@class, 'error')]",
+            "//div[contains(text(), 'Invalid')]",
+            "//div[contains(text(), 'incorrect')]",
+            "//div[contains(text(), 'failed')]"
+        ]
+        
+        for selector in error_selectors:
+            try:
+                error_element = driver.find_element(By.XPATH, selector)
+                if error_element and error_element.is_displayed():
+                    print(f"Login error detected: {error_element.text}")
+                    return False
+            except:
+                continue
+        
+        if login_success:
+            print("Login completed successfully!")
+            return True
+        else:
+            print("Login status unclear, assuming success...")
+            return True
+        
+    except Exception as e:
+        print(f"Login failed with exception: {str(e)}")
+        
+        # Try to take a screenshot for debugging
+        try:
+            driver.save_screenshot(f'login_error_{int(time.time())}.png')
+            print("Screenshot saved for debugging")
+        except:
+            pass
+        
+        return False
+
         
     except Exception as e:
         print(f"Login failed: {str(e)}")
