@@ -1,78 +1,64 @@
-from fastapi import FastAPI, File, UploadFile, Query
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
 import os
-from src.utils import main_api, email, pasw, get_browser
+from src.utils import main_api_with_retry, email, pasw
 from src.login_script import login
-from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-
-driver_first = login(quit=False, headless=False)
-driver_second = login(quit=False, headless=False)
-print("log in done")
-
-
-
-
-
-def remove_pdf(path = "PDF_API"):
-    for file in os.listdir(path):
-        os.remove(os.path.join(path, file))
-        print("Pdf has deleted from PDF API")
+def remove_pdf(path="PDF_API"):
+    if os.path.exists(path):
+        for file in os.listdir(path):
+            os.remove(os.path.join(path, file))
+            print("PDF deleted from PDF_API")
 
 def screenshots_func(screenshots):
     if os.path.exists(screenshots):
-        # Directory exists, remove files within it
         for filename in os.listdir(screenshots):
             file_path = os.path.join(screenshots, filename)
-            os.remove(file_path)  # Remove individual files
+            os.remove(file_path)
     else:
-        # Directory doesn't exist, create it
         os.makedirs(screenshots)
 
-def generate_pdf(input_text, driver = driver_first):
-    # Check if the directory exists
+def generate_pdf(input_text, screenshots="screenshots_api"):
     remove_pdf()
-    screenshots = "screenshots_api"
-    screenshots_func(screenshots = screenshots)
-
-    pdf_path = os.path.join(os.getcwd(),"PDF_API",f"{input_text}.pdf")
-    is_vin_correct = main_api(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=input_text,  driver=driver, screenshot_name = screenshots)
-    pdf_path = os.path.join(os.getcwd(),"PDF_API",f"{input_text}.pdf")
-    return pdf_path
-
-def generate_pdf_second(input_text, driver = driver_second):
-    # Check if the directory exists
-    remove_pdf()
-    screenshots = "screenshots_api_1"
-    screenshots_func(screenshots = screenshots)
+    screenshots_func(screenshots=screenshots)
     
-    is_vin_correct = main_api(url='https://www.carfaxonline.com/', email=email, pasw=pasw, vin=input_text,  driver=driver, screenshot_name = screenshots)
-    pdf_path = os.path.join(os.getcwd(),"PDF_API",f"{input_text}.pdf")
+    # Use enhanced main_api_with_retry instead of main_api
+    is_vin_correct = main_api_with_retry(
+        url='https://www.carfaxonline.com/', 
+        email=email, 
+        pasw=pasw, 
+        vin=input_text, 
+        screenshot_name=screenshots
+    )
+    
+    pdf_path = os.path.join(os.getcwd(), "PDF_API", f"{input_text}.pdf")
     return pdf_path, is_vin_correct
-    
-    
-
-
 
 @app.post("/generate-pdf/")
 def response_pdf(input_text: str):
-    # generate pdf and return the path
-    pdf_path = generate_pdf(input_text)
-
-    return FileResponse(pdf_path, media_type='application/pdf', filename=f"{input_text}.pdf")
-
+    try:
+        pdf_path, is_vin_correct = generate_pdf(input_text)
+        
+        if is_vin_correct and os.path.exists(pdf_path):
+            return FileResponse(pdf_path, media_type='application/pdf', filename=f"{input_text}.pdf")
+        else:
+            raise HTTPException(status_code=400, detail="VIN not found or PDF generation failed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post("/generate-pdf_one/")
 def response_pdf_one(input_text: str):
-    # generate pdf and return the path
-    pdf_path, is_vin_correct = generate_pdf_second(input_text)
-
-    # Return the PDF file
-    if is_vin_correct:
-        return  FileResponse(pdf_path, media_type='application/pdf', filename=f"{input_text}.pdf", status_code=200)
-    else:
-        return JSONResponse(content={"error": "VIN not found", "is_vin_correct": is_vin_correct}, status_code=400)
-
-
+    try:
+        pdf_path, is_vin_correct = generate_pdf(input_text, "screenshots_api_1")
+        
+        if is_vin_correct and os.path.exists(pdf_path):
+            return FileResponse(pdf_path, media_type='application/pdf', filename=f"{input_text}.pdf")
+        else:
+            return JSONResponse(
+                content={"error": "VIN not found", "is_vin_correct": is_vin_correct}, 
+                status_code=400
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

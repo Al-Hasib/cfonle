@@ -15,13 +15,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import time
 import random
-from seleniumwire import webdriver as wire_driver
+import shutil
 
 if not os.path.exists('PDF'):
     os.mkdir('PDF')
 
 if not os.path.exists('PDF_API'):
     os.mkdir('PDF_API')
+
+if not os.path.exists('screenshots'):
+    os.mkdir('screenshots')
 
 with open('Config.json', 'r') as f:
     config = json.load(f)
@@ -34,14 +37,42 @@ chatID = '5491808070'
 
 download_directory = os.path.join(os.getcwd(), 'PDF')
 
+def clean_chromedriver_cache():
+    """Clean and refresh ChromeDriver cache"""
+    try:
+        # Clear webdriver_manager cache
+        cache_dir = os.path.expanduser("~/.wdm")
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
+            print("Cleared ChromeDriver cache")
+    except Exception as e:
+        print(f"Error clearing cache: {e}")
+
+def get_fresh_chromedriver():
+    """Get a fresh ChromeDriver installation"""
+    try:
+        clean_chromedriver_cache()
+        path = ChromeDriverManager().install()
+        
+        # Verify the path exists and is executable
+        if os.path.exists(path) and os.access(path, os.X_OK):
+            print(f"ChromeDriver installed at: {path}")
+            return path
+        else:
+            print(f"ChromeDriver path invalid: {path}")
+            return None
+    except Exception as e:
+        print(f"Error getting ChromeDriver: {e}")
+        return None
+
 def get_browser(headless=False, proxy=False, strategy=1):
     """
     Enhanced browser setup with multiple anti-detection strategies
-    Strategy 1: Undetected ChromeDriver
-    Strategy 2: Selenium Stealth
-    Strategy 3: Manual Fortification
-    Strategy 4: Proxy Rotation
-    Strategy 5: Hybrid Approach
+    Strategy 1: Undetected ChromeDriver (FIXED)
+    Strategy 2: Selenium Stealth (FIXED)
+    Strategy 3: Manual Fortification (FIXED)
+    Strategy 4: Basic Chrome (FALLBACK)
+    Strategy 5: Hybrid Approach (FIXED)
     """
     
     # User agents pool for rotation
@@ -49,123 +80,80 @@ def get_browser(headless=False, proxy=False, strategy=1):
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    ]
-    
-    # Proxy pool (add your proxies here)
-    proxies = [
-        # "http://proxy1:port",
-        # "http://proxy2:port",
-        # Add your residential proxies here
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     ]
     
     try:
         if strategy == 1:
-            return _get_undetected_browser(headless, proxy, user_agents, proxies)
+            return _get_undetected_browser(headless, proxy, user_agents)
         elif strategy == 2:
-            return _get_stealth_browser(headless, proxy, user_agents, proxies)
+            return _get_stealth_browser(headless, proxy, user_agents)
         elif strategy == 3:
-            return _get_fortified_browser(headless, proxy, user_agents, proxies)
+            return _get_fortified_browser(headless, proxy, user_agents)
         elif strategy == 4:
-            return _get_proxy_rotated_browser(headless, proxy, user_agents, proxies)
+            return _get_basic_browser(headless, proxy, user_agents)
         else:
-            return _get_hybrid_browser(headless, proxy, user_agents, proxies)
+            return _get_hybrid_browser(headless, proxy, user_agents)
             
     except Exception as e:
         print(f"Strategy {strategy} failed: {str(e)}")
         return None
 
-def _get_undetected_browser(headless, proxy, user_agents, proxies):
-    """Strategy 1: Undetected ChromeDriver approach"""
+def _get_undetected_browser(headless, proxy, user_agents):
+    """Strategy 1: Undetected ChromeDriver approach - COMPLETELY FIXED"""
     options = uc.ChromeOptions()
     
-    # Basic stealth options
+    # FIXED: Minimal options for undetected chromedriver - NO useAutomationExtension
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-plugins-discovery')
-    options.add_argument('--disable-web-security')
-    options.add_argument('--ignore-certificate-errors')
-    options.add_argument('--ignore-ssl-errors')
-    options.add_argument('--allow-running-insecure-content')
     options.add_argument('--log-level=3')
-    options.page_load_strategy = "none"
-    options.add_argument('--ignore-certificate-errors-spki-list')
-    
-    # Random user agent
     options.add_argument(f'--user-agent={random.choice(user_agents)}')
     
     # Window size randomization
-    window_sizes = ['1366,768', '1920,1080', '1440,900', '1536,864']
+    window_sizes = ['1366,768', '1920,1080', '1440,900']
     options.add_argument(f'--window-size={random.choice(window_sizes)}')
-    options.add_argument("--force-device-scale-factor=1")
-    
-    # Image loading preferences
-    prefs = {"profile.managed_default_content_settings.images": 1}
-    options.add_experimental_option("prefs", prefs)
-    options.add_experimental_option("useAutomationExtension", False)
-    options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
     
     if headless:
         options.add_argument('--headless=new')
     
-    # Proxy setup
-    if proxy and proxies:
-        selected_proxy = random.choice(proxies)
-        options.add_argument(f'--proxy-server={selected_proxy}')
-    
-    # Create driver with undetected chromedriver
-    driver = uc.Chrome(options=options, use_subprocess=False)
+    # Create driver with undetected chromedriver - NO experimental options
+    driver = uc.Chrome(options=options, use_subprocess=False, version_main=None)
     
     # Additional JavaScript execution to hide automation
-    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+    try:
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+    except:
+        pass
     
     return driver
 
-def _get_stealth_browser(headless, proxy, user_agents, proxies):
-    """Strategy 2: Selenium Stealth approach"""
+def _get_stealth_browser(headless, proxy, user_agents):
+    """Strategy 2: Selenium Stealth approach - FIXED"""
     options = Options()
     
-    # Anti-detection options
+    # FIXED: Correct experimental options usage
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--log-level=3')
-    options.page_load_strategy = "none"
-    options.add_argument('--ignore-certificate-errors')
-    options.add_argument('--ignore-ssl-errors')
-    options.add_argument('--ignore-certificate-errors-spki-list')
-    options.add_argument("--disable-web-security")
-    options.add_argument("--force-device-scale-factor=1")
-    
-    # Image loading preferences
-    prefs = {"profile.managed_default_content_settings.images": 1}
-    options.add_experimental_option("prefs", prefs)
-    
-    # Random user agent
-    user_agent = random.choice(user_agents)
-    options.add_argument(f'--user-agent={user_agent}')
+    options.add_argument(f'--user-agent={random.choice(user_agents)}')
     
     # Random window size
-    window_sizes = ['1366,768', '1920,1080', '1440,900', '1536,864']
+    window_sizes = ['1366,768', '1920,1080', '1440,900']
     options.add_argument(f'--window-size={random.choice(window_sizes)}')
     
     if headless:
         options.add_argument('--headless=new')
     
-    # Proxy setup
-    if proxy and proxies:
-        selected_proxy = random.choice(proxies)
-        options.add_argument(f'--proxy-server={selected_proxy}')
+    # Get fresh ChromeDriver
+    chromedriver_path = get_fresh_chromedriver()
+    if not chromedriver_path:
+        raise Exception("Could not get valid ChromeDriver path")
     
-    # Create driver
-    path = ChromeDriverManager().install()
-    path = path.replace("THIRD_PARTY_NOTICES.chromedriver", "chromedriver.exe")
-    service = Service(executable_path=path)
+    service = Service(executable_path=chromedriver_path)
     driver = webdriver.Chrome(service=service, options=options)
     
     # Apply stealth settings
@@ -180,105 +168,76 @@ def _get_stealth_browser(headless, proxy, user_agents, proxies):
     
     return driver
 
-def _get_fortified_browser(headless, proxy, user_agents, proxies):
-    """Strategy 3: Manual fortification approach"""
+def _get_fortified_browser(headless, proxy, user_agents):
+    """Strategy 3: Manual fortification approach - FIXED"""
     options = Options()
     
-    # Comprehensive anti-detection
+    # FIXED: Correct experimental options
     options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
-    options.add_argument('--disable-web-security')
-    options.add_argument('--allow-running-insecure-content')
-    options.add_argument('--disable-features=VizDisplayCompositor')
-    options.add_argument('--disable-ipc-flooding-protection')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--log-level=3')
-    options.page_load_strategy = "none"
-    options.add_argument('--ignore-certificate-errors')
-    options.add_argument('--ignore-ssl-errors')
-    options.add_argument('--ignore-certificate-errors-spki-list')
-    options.add_argument("--force-device-scale-factor=1")
-    
-    # Image loading preferences
-    prefs = {"profile.managed_default_content_settings.images": 1}
-    options.add_experimental_option("prefs", prefs)
-    
-    # Randomize user agent and window size
     options.add_argument(f'--user-agent={random.choice(user_agents)}')
-    window_sizes = ['1366,768', '1920,1080', '1440,900', '1536,864']
+    
+    # Random window size
+    window_sizes = ['1366,768', '1920,1080', '1440,900']
     options.add_argument(f'--window-size={random.choice(window_sizes)}')
     
     if headless:
         options.add_argument('--headless=new')
     
-    if proxy and proxies:
-        selected_proxy = random.choice(proxies)
-        options.add_argument(f'--proxy-server={selected_proxy}')
+    # Get fresh ChromeDriver
+    chromedriver_path = get_fresh_chromedriver()
+    if not chromedriver_path:
+        raise Exception("Could not get valid ChromeDriver path")
     
-    path = ChromeDriverManager().install()
-    path = path.replace("THIRD_PARTY_NOTICES.chromedriver", "chromedriver.exe")
-    service = Service(executable_path=path)
+    service = Service(executable_path=chromedriver_path)
     driver = webdriver.Chrome(service=service, options=options)
     
     # Execute anti-detection scripts
-    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-    driver.execute_script("Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]})")
-    driver.execute_script("Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']})")
+    try:
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        driver.execute_script("Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]})")
+        driver.execute_script("Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']})")
+    except:
+        pass
     
     return driver
 
-def _get_proxy_rotated_browser(headless, proxy, user_agents, proxies):
-    """Strategy 4: Focus on proxy rotation"""
-    try: 
-        # Selenium-wire for advanced proxy handling
-        seleniumwire_options = {}
-        
-        if proxy and proxies:
-            selected_proxy = random.choice(proxies)
-            seleniumwire_options = {
-                'proxy': {
-                    'http': selected_proxy,
-                    'https': selected_proxy,
-                }
-            }
-        
-        options = Options()
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_argument(f'--user-agent={random.choice(user_agents)}')
-        options.add_argument('--log-level=3')
-        options.page_load_strategy = "none"
-        options.add_argument('--ignore-certificate-errors')
-        options.add_argument('--ignore-ssl-errors')
-        options.add_argument("--force-device-scale-factor=1")
-        
-        # Image loading preferences
-        prefs = {"profile.managed_default_content_settings.images": 1}
-        options.add_experimental_option("prefs", prefs)
-        options.add_experimental_option("useAutomationExtension", False)
-        options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
-        
-        if headless:
-            options.add_argument('--headless=new')
-        
-        driver = wire_driver.Chrome(
-            seleniumwire_options=seleniumwire_options,
-            options=options
-        )
-        
-        return driver
-    except ImportError:
-        # Fallback to regular Chrome if selenium-wire not available
-        return _get_fortified_browser(headless, proxy, user_agents, proxies)
+def _get_basic_browser(headless, proxy, user_agents):
+    """Strategy 4: Basic Chrome browser - FALLBACK"""
+    options = Options()
+    
+    # Minimal options for maximum compatibility
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--log-level=3')
+    options.add_argument(f'--user-agent={random.choice(user_agents)}')
+    
+    if headless:
+        options.add_argument('--headless=new')
+    
+    # Get fresh ChromeDriver
+    chromedriver_path = get_fresh_chromedriver()
+    if not chromedriver_path:
+        raise Exception("Could not get valid ChromeDriver path")
+    
+    service = Service(executable_path=chromedriver_path)
+    driver = webdriver.Chrome(service=service, options=options)
+    
+    return driver
 
-def _get_hybrid_browser(headless, proxy, user_agents, proxies):
-    """Strategy 5: Hybrid approach combining multiple techniques"""
+def _get_hybrid_browser(headless, proxy, user_agents):
+    """Strategy 5: Hybrid approach - FIXED"""
     try:
-        return _get_undetected_browser(headless, proxy, user_agents, proxies)
+        return _get_stealth_browser(headless, proxy, user_agents)
     except:
         try:
-            return _get_stealth_browser(headless, proxy, user_agents, proxies)
+            return _get_basic_browser(headless, proxy, user_agents)
         except:
-            return _get_fortified_browser(headless, proxy, user_agents, proxies)
+            return _get_undetected_browser(headless, proxy, user_agents)
 
 def _add_human_behavior(driver):
     """Add human-like behavior patterns"""
@@ -304,213 +263,31 @@ def _add_human_behavior(driver):
         print(f"Human behavior simulation failed: {str(e)}")
 
 def _perform_login(driver, url, email, pasw):
-    """Perform login with enhanced error handling and proper CarfaxOnline.com authentication"""
+    """Use existing login script with proper None handling"""
     try:
-        print("Navigating to login page...")
-        driver.get(url)
+        # Close the passed driver since login() creates its own
+        if driver:
+            driver.quit()
         
-        # Add random delay to simulate human behavior
-        time.sleep(random.uniform(3, 7))
+        # Import and use your existing login function
+        from src.login_script import login
+        authenticated_driver = login(quit=False, headless=False)
         
-        # Wait for page to load completely
-        driver.implicitly_wait(10)
-        
-        # Check if we're already logged in by looking for logout elements or user dashboard
-        try:
-            # Look for elements that indicate we're already logged in
-            logged_in_indicator = driver.find_element(By.XPATH, "//a[contains(@href, 'logout') or contains(text(), 'Logout') or contains(text(), 'Dashboard')]")
-            if logged_in_indicator:
-                print("Already logged in, skipping login process...")
-                return True
-        except:
-            # Not logged in, proceed with login
-            pass
-        
-        # Look for login form elements - try multiple possible selectors
-        email_field = None
-        password_field = None
-        login_button = None
-        
-        # Try to find email/username field with various selectors
-        email_selectors = [
-            "//input[@type='email']",
-            "//input[@name='email']",
-            "//input[@id='email']",
-            "//input[@name='username']",
-            "//input[@id='username']",
-            "//input[@placeholder='Email']",
-            "//input[@placeholder='Username']",
-            "//input[contains(@class, 'email')]",
-            "//input[contains(@class, 'username')]"
-        ]
-        
-        for selector in email_selectors:
-            try:
-                email_field = driver.find_element(By.XPATH, selector)
-                print(f"Found email field with selector: {selector}")
-                break
-            except:
-                continue
-        
-        # Try to find password field with various selectors
-        password_selectors = [
-            "//input[@type='password']",
-            "//input[@name='password']",
-            "//input[@id='password']",
-            "//input[@placeholder='Password']",
-            "//input[contains(@class, 'password')]"
-        ]
-        
-        for selector in password_selectors:
-            try:
-                password_field = driver.find_element(By.XPATH, selector)
-                print(f"Found password field with selector: {selector}")
-                break
-            except:
-                continue
-        
-        # Try to find login button with various selectors
-        login_selectors = [
-            "//button[@type='submit']",
-            "//input[@type='submit']",
-            "//button[contains(text(), 'Login')]",
-            "//button[contains(text(), 'Sign In')]",
-            "//input[@value='Login']",
-            "//input[@value='Sign In']",
-            "//button[contains(@class, 'login')]",
-            "//button[contains(@class, 'signin')]",
-            "//a[contains(@class, 'login')]"
-        ]
-        
-        for selector in login_selectors:
-            try:
-                login_button = driver.find_element(By.XPATH, selector)
-                print(f"Found login button with selector: {selector}")
-                break
-            except:
-                continue
-        
-        # Check if we found all required elements
-        if not email_field:
-            print("Could not find email/username field")
-            return False
-        
-        if not password_field:
-            print("Could not find password field")
-            return False
-        
-        if not login_button:
-            print("Could not find login button")
-            return False
-        
-        # Clear fields and enter credentials with human-like typing
-        print("Clearing and filling email field...")
-        email_field.clear()
-        time.sleep(random.uniform(0.5, 1.5))
-        
-        # Type email with human-like speed
-        for char in email:
-            email_field.send_keys(char)
-            time.sleep(random.uniform(0.05, 0.15))
-        
-        time.sleep(random.uniform(1, 2))
-        
-        print("Clearing and filling password field...")
-        password_field.clear()
-        time.sleep(random.uniform(0.5, 1.5))
-        
-        # Type password with human-like speed
-        for char in pasw:
-            password_field.send_keys(char)
-            time.sleep(random.uniform(0.05, 0.15))
-        
-        time.sleep(random.uniform(1, 3))
-        
-        # Click login button
-        print("Clicking login button...")
-        driver.execute_script("arguments[0].click();", login_button)
-        
-        # Wait for login to process
-        time.sleep(random.uniform(3, 6))
-        
-        # Verify login success by checking for various indicators
-        login_success = False
-        
-        # Check for successful login indicators
-        success_indicators = [
-            "//a[contains(@href, 'logout')]",
-            "//a[contains(text(), 'Logout')]",
-            "//div[contains(@class, 'dashboard')]",
-            "//div[contains(@class, 'user')]",
-            "//span[contains(@class, 'username')]",
-            "//div[contains(@class, 'profile')]"
-        ]
-        
-        for indicator in success_indicators:
-            try:
-                element = driver.find_element(By.XPATH, indicator)
-                if element:
-                    print(f"Login success detected with indicator: {indicator}")
-                    login_success = True
-                    break
-            except:
-                continue
-        
-        # Alternative check: see if we're redirected away from login page
-        if not login_success:
-            current_url = driver.current_url.lower()
-            if 'login' not in current_url and 'signin' not in current_url:
-                print("Login appears successful - redirected away from login page")
-                login_success = True
-        
-        # Check for error messages
-        error_selectors = [
-            "//div[contains(@class, 'error')]",
-            "//div[contains(@class, 'alert')]",
-            "//span[contains(@class, 'error')]",
-            "//p[contains(@class, 'error')]",
-            "//div[contains(text(), 'Invalid')]",
-            "//div[contains(text(), 'incorrect')]",
-            "//div[contains(text(), 'failed')]"
-        ]
-        
-        for selector in error_selectors:
-            try:
-                error_element = driver.find_element(By.XPATH, selector)
-                if error_element and error_element.is_displayed():
-                    print(f"Login error detected: {error_element.text}")
-                    return False
-            except:
-                continue
-        
-        if login_success:
-            print("Login completed successfully!")
-            return True
-        else:
-            print("Login status unclear, assuming success...")
-            return True
-        
-    except Exception as e:
-        print(f"Login failed with exception: {str(e)}")
-        
-        # Try to take a screenshot for debugging
-        try:
-            driver.save_screenshot(f'login_error_{int(time.time())}.png')
-            print("Screenshot saved for debugging")
-        except:
-            pass
-        
-        return False
-
+        # Check if login returned a valid driver
+        if authenticated_driver is None:
+            print("Login function returned None - login failed")
+            return None
+            
+        return authenticated_driver
         
     except Exception as e:
         print(f"Login failed: {str(e)}")
-        return False
+        return None
 
 def main_with_retry(url, email, pasw, vin, api_token, chat_id, max_retries=5):
     """Enhanced main function with retry logic and multiple strategies"""
     
-    strategies = [1, 2, 3, 4, 5]  # All available strategies
+    strategies = [2, 3, 4, 1, 5]  # Start with stealth, then basic, then undetected
     
     for attempt in range(max_retries):
         strategy = strategies[attempt % len(strategies)]
@@ -519,19 +296,21 @@ def main_with_retry(url, email, pasw, vin, api_token, chat_id, max_retries=5):
         try:
             print(f"Attempt {attempt + 1}: Using strategy {strategy}")
             
-            # Get browser with current strategy
-            driver = get_browser(headless=False, proxy=False, strategy=strategy)
+            # Get initial browser with current strategy
+            initial_driver = get_browser(headless=False, proxy=False, strategy=strategy)
             
+            if initial_driver is None:
+                print("Failed to create initial driver")
+                continue
+            
+            # Use your existing login function
+            driver = _perform_login(initial_driver, url, email, pasw)
             if driver is None:
+                print("Login failed, trying next strategy")
                 continue
             
-            # Add human-like behavior
+            # Add human-like behavior to the authenticated driver
             _add_human_behavior(driver)
-            
-            # Login first
-            success = _perform_login(driver, url, email, pasw)
-            if not success:
-                continue
             
             # Perform main scraping with your existing logic
             result = _perform_main_scraping(driver, vin, api_token, chat_id)
@@ -658,7 +437,7 @@ def _perform_main_scraping(driver, vin, api_token, chat_id):
 def main_api_with_retry(url, email, pasw, vin, screenshot_name="screenshots_api", max_retries=5):
     """Enhanced main_api function with retry logic and multiple strategies"""
     
-    strategies = [1, 2, 3, 4, 5]
+    strategies = [2, 3, 4, 1, 5]  # Start with stealth, then basic
     
     for attempt in range(max_retries):
         strategy = strategies[attempt % len(strategies)]
@@ -667,16 +446,16 @@ def main_api_with_retry(url, email, pasw, vin, screenshot_name="screenshots_api"
         try:
             print(f"API Attempt {attempt + 1}: Using strategy {strategy}")
             
-            driver = get_browser(headless=False, proxy=False, strategy=strategy)
+            initial_driver = get_browser(headless=False, proxy=False, strategy=strategy)
             
+            if initial_driver is None:
+                continue
+            
+            driver = _perform_login(initial_driver, url, email, pasw)
             if driver is None:
                 continue
             
             _add_human_behavior(driver)
-            
-            success = _perform_login(driver, url, email, pasw)
-            if not success:
-                continue
             
             result = _perform_api_scraping(driver, vin, screenshot_name)
             

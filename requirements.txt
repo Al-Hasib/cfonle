@@ -2,6 +2,7 @@ selenium==4.15.2
 undetected-chromedriver==3.5.4
 selenium-stealth==1.0.6
 selenium-wire==5.1.0
+blinker==1.6.2
 webdriver-manager==4.0.1
 python-telegram-bot==13.15
 pandas==2.1.3
