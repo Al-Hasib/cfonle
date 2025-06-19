@@ -16,6 +16,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 import time
 import random
 import shutil
+import glob
 
 if not os.path.exists('PDF'):
     os.mkdir('PDF')
@@ -49,18 +50,58 @@ def clean_chromedriver_cache():
         print(f"Error clearing cache: {e}")
 
 def get_fresh_chromedriver():
-    """Get a fresh ChromeDriver installation"""
+    """Get a fresh ChromeDriver installation with correct path"""
     try:
         clean_chromedriver_cache()
-        path = ChromeDriverManager().install()
         
-        # Verify the path exists and is executable
-        if os.path.exists(path) and os.access(path, os.X_OK):
-            print(f"ChromeDriver installed at: {path}")
-            return path
-        else:
-            print(f"ChromeDriver path invalid: {path}")
-            return None
+        # Get the path from ChromeDriverManager
+        initial_path = ChromeDriverManager().install()
+        print(f"Initial path from ChromeDriverManager: {initial_path}")
+        
+        # FIXED: Find the actual chromedriver.exe file
+        if "THIRD_PARTY_NOTICES.chromedriver" in initial_path:
+            # Extract the directory path
+            driver_dir = os.path.dirname(initial_path)
+            print(f"Driver directory: {driver_dir}")
+            
+            # Look for chromedriver.exe in the directory and subdirectories
+            possible_paths = [
+                os.path.join(driver_dir, "chromedriver.exe"),
+                os.path.join(driver_dir, "chromedriver-win32", "chromedriver.exe"),
+                os.path.join(driver_dir, "chromedriver"),
+            ]
+            
+            # Also search with glob pattern
+            glob_patterns = [
+                os.path.join(driver_dir, "**/chromedriver.exe"),
+                os.path.join(driver_dir, "**/chromedriver"),
+            ]
+            
+            for pattern in glob_patterns:
+                matches = glob.glob(pattern, recursive=True)
+                possible_paths.extend(matches)
+            
+            # Find the first valid executable
+            for path in possible_paths:
+                if os.path.exists(path) and os.path.isfile(path):
+                    print(f"Found valid ChromeDriver at: {path}")
+                    return path
+            
+            # If not found, try to construct the correct path
+            base_dir = os.path.dirname(os.path.dirname(initial_path))
+            correct_path = os.path.join(base_dir, "chromedriver.exe")
+            if os.path.exists(correct_path):
+                print(f"Found ChromeDriver at constructed path: {correct_path}")
+                return correct_path
+        
+        # If the initial path is already correct
+        if os.path.exists(initial_path) and os.path.isfile(initial_path):
+            print(f"Using initial path: {initial_path}")
+            return initial_path
+        
+        print("Could not find valid ChromeDriver executable")
+        return None
+        
     except Exception as e:
         print(f"Error getting ChromeDriver: {e}")
         return None
@@ -103,7 +144,7 @@ def _get_undetected_browser(headless, proxy, user_agents):
     """Strategy 1: Undetected ChromeDriver approach - COMPLETELY FIXED"""
     options = uc.ChromeOptions()
     
-    # FIXED: Minimal options for undetected chromedriver - NO useAutomationExtension
+    # FIXED: Minimal options for undetected chromedriver
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-blink-features=AutomationControlled')
@@ -117,7 +158,7 @@ def _get_undetected_browser(headless, proxy, user_agents):
     if headless:
         options.add_argument('--headless=new')
     
-    # Create driver with undetected chromedriver - NO experimental options
+    # Create driver with undetected chromedriver
     driver = uc.Chrome(options=options, use_subprocess=False, version_main=None)
     
     # Additional JavaScript execution to hide automation
@@ -148,7 +189,7 @@ def _get_stealth_browser(headless, proxy, user_agents):
     if headless:
         options.add_argument('--headless=new')
     
-    # Get fresh ChromeDriver
+    # Get fresh ChromeDriver with correct path
     chromedriver_path = get_fresh_chromedriver()
     if not chromedriver_path:
         raise Exception("Could not get valid ChromeDriver path")
@@ -188,7 +229,7 @@ def _get_fortified_browser(headless, proxy, user_agents):
     if headless:
         options.add_argument('--headless=new')
     
-    # Get fresh ChromeDriver
+    # Get fresh ChromeDriver with correct path
     chromedriver_path = get_fresh_chromedriver()
     if not chromedriver_path:
         raise Exception("Could not get valid ChromeDriver path")
@@ -219,7 +260,7 @@ def _get_basic_browser(headless, proxy, user_agents):
     if headless:
         options.add_argument('--headless=new')
     
-    # Get fresh ChromeDriver
+    # Get fresh ChromeDriver with correct path
     chromedriver_path = get_fresh_chromedriver()
     if not chromedriver_path:
         raise Exception("Could not get valid ChromeDriver path")
