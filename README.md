@@ -2,7 +2,7 @@
 
 For Telegram Bot
 ```python
-python maain.py
+python main.py
 ```
 
 For API

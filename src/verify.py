@@ -4,8 +4,8 @@ import re
 
 
 def verfication_code():
-    EMAIL = "datacar30@gmail.com"
-    PASSWORD = "aqaj kmxm buxb sdtc"
+    EMAIL = "cfox6731@gmail.com"
+    PASSWORD = "2fWMIdphnV1JAHC"
     IMAP_SERVER = "imap.gmail.com"
     key = "FROM"
     from_mail = "CARFAX@noreply.email.carfax.com"
