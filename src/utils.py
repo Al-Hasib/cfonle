@@ -1518,7 +1518,8 @@ def main_with_retry(url, email, pasw, vin, api_token, chat_id, max_retries=7):
     kill_all_chrome_instances()
     
     # Prioritize Selenium strategies for better control, then PyWin for stealth
-    strategies = [2, 3, 4, 1, 5, 6, 7]
+    # strategies = [2, 3, 4, 1, 5, 6, 7]
+    strategies = [6,7]
     
     for attempt in range(max_retries):
         strategy = strategies[attempt % len(strategies)]
@@ -1533,6 +1534,7 @@ def main_with_retry(url, email, pasw, vin, api_token, chat_id, max_retries=7):
             
             # Get initial browser with current strategy
             initial_driver = get_browser(headless=False, proxy=False, strategy=strategy)
+            logger.info("initial_driver get_browser")
             
             if initial_driver is None:
                 logger.warning("Failed to create initial driver")
@@ -1544,6 +1546,7 @@ def main_with_retry(url, email, pasw, vin, api_token, chat_id, max_retries=7):
                 result = _perform_pywin_intelligent_scraping_enhanced(driver, vin, api_token, chat_id, url, email, pasw)
             else:
                 # Use enhanced intelligent login function for Selenium drivers
+
                 driver = handle_login_intelligently_enhanced(initial_driver, email, pasw)
                 if driver is None:
                     logger.warning("Login failed, trying next strategy")
