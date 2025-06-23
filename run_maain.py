@@ -1,46 +1,58 @@
 import os
 import time
 import subprocess
-import signal
-import psutil
+from psutil import process_iter, Process
+from signal import SIGTERM
 
-def kill_existing_processes():
-    """Kill any existing Python processes running the bot"""
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-        try:
-            if proc.info['name'] == 'python.exe' and 'maain.py' in ' '.join(proc.info['cmdline']):
-                proc.kill()
-                print(f"Killed existing process: {proc.info['pid']}")
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
+screenshots = "screenshots"
 
-def main():
-    while True:
-        # Kill any existing processes first
-        # kill_existing_processes()
-        time.sleep(5)  # Wait for processes to fully terminate
-        
-        # Clean up screenshots
-        if os.path.exists("screenshots"):
-            for filename in os.listdir("screenshots"):
-                file_path = os.path.join("screenshots", filename)
-                os.remove(file_path)
-        else:
-            os.makedirs("screenshots")
-        
-        print("Starting the script...")
-        process = subprocess.Popen(["python", "maain.py"])
-        print(f"Script started with PID {process.pid}")
-        
-        # Run for 1 hour
-        time.sleep(3600)
-        
-        print("Terminating the script...")
-        process.terminate()
-        process.wait()
-        
-        time.sleep(3)
-        print("Restarting the script...")
+def cleanup_screenshots():
+    """Clean up the screenshots directory."""
+    if os.path.exists(screenshots):
+        for filename in os.listdir(screenshots):
+            file_path = os.path.join(screenshots, filename)
+            os.remove(file_path)
+    else:
+        os.makedirs(screenshots)
 
-if __name__ == "__main__":
-    main()
+def quit_specific_browser(subprocess_pid):
+    """
+    Terminate only the Chrome browser processes spawned by the specific Chromedriver subprocess.
+    """
+    try:
+        # Get the Process object for the subprocess
+        parent_process = Process(subprocess_pid)
+        # Iterate through child processes of the subprocess
+        for child in parent_process.children(recursive=True):
+            if "chrome" in child.name().lower():
+                try:
+                    os.kill(child.pid, SIGTERM)  # Send terminate signal to the Chrome process
+                    print(f"Terminated Chrome process (PID: {child.pid})")
+                except Exception as e:
+                    print(f"Failed to terminate Chrome process (PID: {child.pid}): {e}")
+    except Exception as e:
+        print(f"Failed to find child processes for subprocess PID {subprocess_pid}: {e}")
+
+while True:
+    # Step 1: Clean up screenshots directory
+    cleanup_screenshots()
+
+    # Step 2: Launch the script as a subprocess
+    print("Starting the script...")
+    process = subprocess.Popen(["python", "maain.py"])  # Launch the script
+    print(f"Script started with PID {process.pid}")
+
+    # Step 3: Run the subprocess for a specific duration (e.g., 1 hour)
+    time.sleep(500000)  # Keep the subprocess running for 1 hour
+
+    # Step 4: Terminate the subprocess
+    print("Terminating the script...")
+    quit_specific_browser(process.pid)
+    process.terminate()
+    process.wait()  # Ensure the process has terminated
+    time.sleep(3)
+
+    # Step 5: Quit only Chrome processes associated with this subprocess
+    
+
+    print("Restarting the script...")
