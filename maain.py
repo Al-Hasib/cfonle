@@ -8,13 +8,14 @@ from dotenv import load_dotenv
 from telegram import Update, Bot
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, JobQueue
 from telegram.error import Conflict, NetworkError
-from src.utils import main_with_retry, main_api_with_retry, email, pasw, apiToken, chatID
+from src.utils_ import main_with_retry, main_api_with_retry, email, pasw, apiToken, chatID
 from src.Tele import SendPdf, WaitMsg, NoAccessMsg, TryAgainMsg, SendPdf_S3, LimitIssueMsg
 from src.s3_connection import download_pdf_s3, pdf_exists
 import pandas as pd
 import uuid
 import time
 import random
+from src.utils import main
 
 # Setup enhanced logging
 logging.basicConfig(
@@ -245,21 +246,23 @@ def process_main_enhanced(context: CallbackContext):
                 logger.info(f"Remaining in queue: {len(chat_id_vin_number)}")
 
                 # Process with retry logic
-                is_vin_correct = main_with_retry(
-                    url='https://www.carfaxonline.com/', 
-                    email=email, 
-                    pasw=pasw, 
-                    vin=item[1], 
-                    api_token=apiToken, 
-                    chat_id=item[0]
-                )
+                # is_vin_correct = main_with_retry(
+                #     url='https://www.carfaxonline.com/', 
+                #     email=email, 
+                #     pasw=pasw, 
+                #     vin=item[1], 
+                #     api_token=apiToken, 
+                #     chat_id=item[0]
+                # )
+
+                main(vin=item[1])
                 
-                if is_vin_correct:
-                    id_vin_list.append((item[0], item[1]))
-                    logger.info(f"VIN processing successful for: {item[1]}")
-                    process_pdf_send(context)
-                else:
-                    logger.warning(f"VIN processing failed for: {item[1]}")
+                # if is_vin_correct:
+                id_vin_list.append((item[0], item[1]))
+                logger.info(f"VIN processing successful for: {item[1]}")
+                process_pdf_send(context)
+                # else:
+                #     logger.warning(f"VIN processing failed for: {item[1]}")
                 
                 # Process only one item per call to avoid overwhelming
                 break
